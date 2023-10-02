@@ -140,7 +140,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
                 # path exists but does not end with .html .css or /
                 else:
-                    print("301")
                     fixed_path = self.data[1].decode("utf-8") + "/"
                     self.request.sendall(bytearray(generate_response_message("301", location=fixed_path), "utf-8"))
 
