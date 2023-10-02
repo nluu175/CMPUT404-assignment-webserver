@@ -27,6 +27,8 @@ import socketserver
 
 # try: curl -v -X GET http://127.0.0.1:8080/
 
+# Code is written by Nhat Minh, Luu - 2023
+
 
 def get_request_method(data):
     """
@@ -48,10 +50,14 @@ def generate_response_message(code, file_obj=None, content_length=None, content_
     Generates and returns the response message according to the given code.
 
     Parameters:
-
+        code (str): HTTP status code
+        file_obj (str, optional, default=None): the content of the file
+        content_length (str, optional, default=None): length of content
+        content_type (str, optional, default=None): type of content
+        location (str, optional, default=None): redirect link (only applicable for code 301)
 
     Returns:
-
+        response_message (str): the response message 
     """
     status_codes = {
         "200": "OK",
@@ -61,71 +67,56 @@ def generate_response_message(code, file_obj=None, content_length=None, content_
     }
 
     if code == "200":
-        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nContent-length: {content_length}\r\n\r\n{file_obj}\r\nConnection:close\r\n"
+        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nContent-length: {content_length}\r\n\r\n{file_obj}\r\nConnection: close\r\n"
 
         return response_message
     
     elif code == "301":
-        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nLocation: {location}\r\n"
+        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nLocation: {location}\r\nConnection: close\r\n"
 
         return response_message
 
     elif code == "404":
-        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nConnection:close\r\n"
+        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nConnection: close\r\n"
 
         return response_message
 
 
     elif code == "405":
-        # TODO: Missing content length
-        content_type = "text/html"
-        content_lenth = ""
-        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nContent-type: {content_type}\r\nConnection:close\r\n"
+        response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nConnection: close\r\n"
     
         return response_message
 
-def is_allowed_request(data):
-    """
-    Check if the request method is allowed
-    Returns True on allowed request method and False otherwise.
-
-    Parameters:
-        data (str): The request data
-
-    Returns:
-        method (bool): The boolean value on where the request method is allowed 
-    """
-
-    method = get_request_method(data)
-
-    if method != "GET":
-        return False
-    
-    return True
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
     
     def handle(self):
         # Main logic loop 
-        self.data = self.request.recv(1024).strip() # --- from original code
-        print ("Got a request of: %s\n" % self.data) # --- from original code
+        self.data = self.request.recv(1024).strip()
+        print ("Got a request of: %s\n" % self.data)
 
         self.data = self.data.split()
 
         # method of request is not allowed (only allows HTTP GET)
-        if not is_allowed_request(self.data):
+        if get_request_method(self.data) not in ["GET"]:
             self.request.sendall(bytearray(generate_response_message("405"), "utf-8")) 
 
         else:
-            
-            content_type = ""
-
             # we use this to trim down the / at the end of the file (if exists)
             path = os.path.abspath("www") + self.data[1].decode("utf-8")
 
             if (os.path.exists(path)):
-                if path.endswith("css"):
+                if path.endswith("html"):
+                    content_type = "text/html"
+                    file_obj = open(path, "r").read()
+                    content_length = str(len(file_obj))
+
+                    self.request.sendall(bytearray(
+                        generate_response_message("200", file_obj=file_obj, content_length=content_length, content_type=content_type), 
+                        "utf-8")
+                    )  
+                elif path.endswith("css"):
                     content_type = "text/css"
                     file_obj = open(path, "r").read()
                     content_length = str(len(file_obj))
@@ -135,18 +126,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         "utf-8")
                     )  
                 
-                elif path.endswith("html"):
-                    content_type = "text/html"
-                    file_obj = open(path, "r").read()
-                    content_length = str(len(file_obj))
-
-                    self.request.sendall(bytearray(
-                        generate_response_message("200", file_obj=file_obj, content_length=content_length, content_type=content_type), 
-                        "utf-8")
-                    )  
                 
                 elif path.endswith("/"):
-                    path = path + "/index.html"
+                    path = path + "index.html"
     
                     content_type = "text/html"
                     file_obj = open(path, "r").read()
@@ -157,7 +139,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         "utf-8")
                     )  
 
-                elif "/.." in path:
+                elif ".." in path:
                     # Invalid path, does not allow relative path
                     self.request.sendall(bytearray(generate_response_message("404"), "utf-8")) 
 
