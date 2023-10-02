@@ -81,7 +81,6 @@ def generate_response_message(code, file_obj=None, content_length=None, content_
 
         return response_message
 
-
     elif code == "405":
         response_message = f"HTTP/1.1 {code} {status_codes[code]}\r\nConnection: close\r\n"
     
@@ -116,6 +115,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         generate_response_message("200", file_obj=file_obj, content_length=content_length, content_type=content_type), 
                         "utf-8")
                     )  
+
                 elif path.endswith("css"):
                     content_type = "text/css"
                     file_obj = open(path, "r").read()
@@ -125,7 +125,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         generate_response_message("200", file_obj=file_obj, content_length=content_length, content_type=content_type), 
                         "utf-8")
                     )  
-                
                 
                 elif path.endswith("/"):
                     path = path + "index.html"
@@ -139,16 +138,18 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         "utf-8")
                     )  
 
-                elif ".." in path:
+                elif "/.." in path or "./" in path:
                     # Invalid path, does not allow relative path
                     self.request.sendall(bytearray(generate_response_message("404"), "utf-8")) 
 
+                # path exists but does not end with .html .css or /
                 else:
                     fixed_path = self.data[1].decode("utf-8") + "/"
                     self.request.sendall(bytearray(generate_response_message("301", location=fixed_path), "utf-8"))
 
             else:
                 # Invalid path 
+                print("invalid")
                 self.request.sendall(bytearray(generate_response_message("404"), "utf-8")) 
 
 
