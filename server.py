@@ -138,17 +138,14 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         "utf-8")
                     )  
 
-                elif "/.." in path or "./" in path:
-                    # Invalid path, does not allow relative path
-                    self.request.sendall(bytearray(generate_response_message("404"), "utf-8")) 
-
                 # path exists but does not end with .html .css or /
                 else:
+                    print("301")
                     fixed_path = self.data[1].decode("utf-8") + "/"
                     self.request.sendall(bytearray(generate_response_message("301", location=fixed_path), "utf-8"))
 
             else:
-                # Invalid path 
+                # file does not exist, then not found
                 self.request.sendall(bytearray(generate_response_message("404"), "utf-8")) 
 
 
