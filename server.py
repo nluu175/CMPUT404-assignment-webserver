@@ -106,7 +106,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
             path = os.path.abspath("www") + self.data[1].decode("utf-8")
 
             if (os.path.exists(path)):
-                if path.endswith("html"):
+                if path.endswith(".html"):
                     content_type = "text/html"
                     file_obj = open(path, "r").read()
                     content_length = str(len(file_obj))
@@ -116,7 +116,7 @@ class MyWebServer(socketserver.BaseRequestHandler):
                         "utf-8")
                     )  
 
-                elif path.endswith("css"):
+                elif path.endswith(".css"):
                     content_type = "text/css"
                     file_obj = open(path, "r").read()
                     content_length = str(len(file_obj))
@@ -149,7 +149,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
 
             else:
                 # Invalid path 
-                print("invalid")
                 self.request.sendall(bytearray(generate_response_message("404"), "utf-8")) 
 
 
